@@ -1,6 +1,4 @@
-import Database from "better-sqlite3";
-import { existsSync, mkdirSync, readFileSync } from "fs";
-import path from "path";
+import { Pool, type QueryResultRow } from "pg";
 import { env } from "./env.ts";
 
 export type ReceiptRow = {
@@ -21,20 +19,34 @@ export type ReceiptRow = {
   updated_at: string;
 };
 
-let _db: Database.Database | null = null;
+let _pool: Pool | null = null;
+let _init: Promise<void> | null = null;
 
-export function dataDir(): string {
-  return env("PHAROS_DATA_DIR", path.join(process.cwd(), "data"));
+/**
+ * Table name. Defaults to `receipts`; tests override this so they never touch
+ * production data.
+ */
+export function tableName(): string {
+  return env("PHAROS_DB_TABLE", "receipts");
 }
 
-function open(): Database.Database {
-  mkdirSync(dataDir(), { recursive: true });
-  const file = path.join(dataDir(), "receipts.db");
-  const db = new Database(file);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS receipts (
+export function getPool(): Pool {
+  if (_pool) return _pool;
+  _pool = new Pool({
+    connectionString: env("DATABASE_URL"),
+    ssl: { rejectUnauthorized: false },
+    max: 10,
+  });
+  _pool.on("error", (error) => {
+    console.error("[folio] postgres pool error", error);
+  });
+  return _pool;
+}
+
+async function ensureSchema(): Promise<void> {
+  const t = tableName();
+  const sql = `
+    CREATE TABLE IF NOT EXISTS ${t} (
       id TEXT PRIMARY KEY,
       receipt_json TEXT NOT NULL,
       buyer_id TEXT,
@@ -44,86 +56,70 @@ function open(): Database.Database {
       seller_name TEXT,
       product_name TEXT,
       purchased_at TEXT,
-      amount REAL,
+      amount DOUBLE PRECISION,
       currency TEXT,
       payment_reference TEXT,
       onchain_tx_hash TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_receipts_owner ON receipts(current_owner);
-    CREATE INDEX IF NOT EXISTS idx_receipts_buyer ON receipts(buyer_id);
-    CREATE INDEX IF NOT EXISTS idx_receipts_status ON receipts(status);
-    CREATE INDEX IF NOT EXISTS idx_receipts_created ON receipts(created_at DESC);
-  `);
-  migrateLegacy(db);
-  return db;
-}
-
-function migrateLegacy(db: Database.Database): void {
-  const legacyFile = path.join(dataDir(), "receipts.json");
-  if (!existsSync(legacyFile)) return;
+    CREATE INDEX IF NOT EXISTS idx_${t}_owner ON ${t}(current_owner);
+    CREATE INDEX IF NOT EXISTS idx_${t}_buyer ON ${t}(buyer_id);
+    CREATE INDEX IF NOT EXISTS idx_${t}_status ON ${t}(status);
+    CREATE INDEX IF NOT EXISTS idx_${t}_created ON ${t}(created_at DESC);
+  `;
+  const pool = getPool();
+  const client = await pool.connect();
   try {
-    const parsed = JSON.parse(readFileSync(legacyFile, "utf8")) as Record<string, unknown>[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return;
-    const { c } = db.prepare("SELECT COUNT(*) AS c FROM receipts").get() as { c: number };
-    if (c > 0) return;
-    const insert = db.prepare(`
-      INSERT OR IGNORE INTO receipts
-        (id, receipt_json, buyer_id, buyer_wallet, current_owner, status,
-         seller_name, product_name, purchased_at, amount, currency,
-         payment_reference, onchain_tx_hash, created_at, updated_at)
-      VALUES
-        (@id, @receipt_json, @buyer_id, @buyer_wallet, @current_owner, @status,
-         @seller_name, @product_name, @purchased_at, @amount, @currency,
-         @payment_reference, @onchain_tx_hash, @created_at, @updated_at)
-    `);
-    const tx = db.transaction((rows: Record<string, unknown>[]) => {
-      for (const raw of rows) insert.run(columnsForRow(raw));
-    });
-    tx(parsed);
-    console.info(
-      `[folio] imported ${parsed.length} receipt(s) from legacy data/receipts.json`,
-    );
+    await client.query("BEGIN");
+    await client.query(sql);
+    await client.query("COMMIT");
   } catch (error) {
-    console.warn("[folio] could not migrate legacy receipts.json", error);
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
-function columnsForRow(raw: Record<string, unknown>) {
-  const time = new Date().toISOString();
-  const buyer = (raw.buyer ?? {}) as Record<string, unknown>;
-  const seller = (raw.seller ?? {}) as Record<string, unknown>;
-  const product = (raw.product ?? {}) as Record<string, unknown>;
-  const payment = (raw.payment ?? {}) as Record<string, unknown>;
-  const ownership = (raw.ownership ?? {}) as Record<string, unknown>;
-  return {
-    id: String(raw.id ?? ""),
-    receipt_json: JSON.stringify(raw),
-    buyer_id: buyer.id ? String(buyer.id) : null,
-    buyer_wallet: buyer.wallet ? String(buyer.wallet) : null,
-    current_owner: ownership.currentOwner ? String(ownership.currentOwner) : null,
-    status: ownership.status ? String(ownership.status) : "owned",
-    seller_name: seller.name ? String(seller.name) : null,
-    product_name: product.name ? String(product.name) : null,
-    purchased_at: raw.purchasedAt ? String(raw.purchasedAt) : null,
-    amount: typeof payment.amount === "number" ? payment.amount : null,
-    currency: payment.currency ? String(payment.currency) : null,
-    payment_reference: payment.reference ? String(payment.reference) : null,
-    onchain_tx_hash: null,
-    created_at: time,
-    updated_at: time,
-  };
+function init(): Promise<void> {
+  if (!_init) _init = ensureSchema();
+  return _init;
 }
 
-export function getDb(): Database.Database {
-  if (!_db) _db = open();
-  return _db;
+export async function queryAll<T extends QueryResultRow = ReceiptRow>(
+  sql: string,
+  params: unknown[] = [],
+): Promise<T[]> {
+  await init();
+  const result = await getPool().query<T>(sql, params);
+  return result.rows;
 }
 
-export function closeDb(): void {
-  if (_db) {
-    _db.close();
-    _db = null;
+export async function queryOne<T extends QueryResultRow = ReceiptRow>(
+  sql: string,
+  params: unknown[] = [],
+): Promise<T | undefined> {
+  const rows = await queryAll<T>(sql, params);
+  return rows[0];
+}
+
+export async function run(sql: string, params: unknown[] = []): Promise<void> {
+  await init();
+  await getPool().query(sql, params);
+}
+
+/**
+ * Thin alias kept for callers that previously used getDb(). Returns the pool.
+ */
+export function getDb(): Pool {
+  return getPool();
+}
+
+export async function closeDb(): Promise<void> {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _init = null;
   }
 }

@@ -26,7 +26,7 @@ block explorer.
 
 ## Stack
 
-Next.js 14 (App Router), ethers v6, better-sqlite3, Hardhat 2. Node 18+.
+Next.js 14 (App Router), ethers v6, Postgres (Supabase) via `pg`, Hardhat 2. Node 22+.
 
 ## Setup
 
@@ -45,9 +45,10 @@ Copy `.env.example` to `.env` and set the three required secrets:
 | `PHAROS_RECEIPT_SECRET` | HMAC key that signs every receipt |
 | `PHAROS_SESSION_SECRET` | Signs the wallet session cookie |
 | `PHAROS_API_KEY` | Business API key for issuing/transferring/revoking from your server |
+| `DATABASE_URL` | Supabase Postgres transaction pooler connection string |
 
-Optional: `PHAROS_DATA_DIR` (default `./data`), `PHAROS_ALLOW_CLIENT_ISSUE`
-(demo-only, lets the dashboard issue from the browser).
+Optional: `PHAROS_ALLOW_CLIENT_ISSUE` (demo-only, lets the dashboard issue from
+the browser). See `DEPLOYMENT.md` for the Supabase + Vercel setup.
 
 ### 3. Run
 

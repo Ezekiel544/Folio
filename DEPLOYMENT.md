@@ -1,19 +1,34 @@
 # Deploying Folio
 
-Folio is a Next.js 14 app backed by a **SQLite** file (`better-sqlite3`). It must
-run on a host with a **persistent disk** and a **single instance**. This guide
-targets **Render**, with optional **Sepolia** onchain anchoring.
+Folio is a Next.js 14 app that stores receipts in **Supabase Postgres** (via
+`pg`). It can run on **Vercel** (recommended) or any Node host — no persistent
+disk required anymore.
 
 ## Prerequisites
 
-- Repo pushed to GitHub (add `.gitignore` first — already included).
-- Render account on a **paid plan** (persistent disks are not on free tier).
-- Node >= 22 locally (required by `better-sqlite3@13`).
-- For anchoring: a Sepolia RPC URL and a funded Sepolia wallet.
+- Repo pushed to GitHub.
+- A Supabase project (free tier is fine).
+- Vercel account (free Hobby tier is fine).
 
-## Quickstart
+## 1. Database — Supabase
 
-### 1. Generate the three secrets
+1. Create a project at https://supabase.com.
+2. Open **Settings → Database → Connection string → Transaction pooler** and copy
+   it. It looks like:
+
+   ```
+   postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
+   ```
+
+3. That string is `DATABASE_URL`. The app creates the `receipts` table and its
+   indexes automatically on first use — no SQL to run.
+
+> Use the **Transaction pooler** (port `6543`). Vercel functions are ephemeral,
+> so direct connections exhaust the limited Postgres connection slots.
+
+## 2. Secrets
+
+Generate three long random values:
 
 ```bash
 openssl rand -hex 32   # PHAROS_API_KEY
@@ -21,124 +36,100 @@ openssl rand -hex 32   # PHAROS_RECEIPT_SECRET
 openssl rand -hex 32   # PHAROS_SESSION_SECRET
 ```
 
-Save them in a password manager. `PHAROS_RECEIPT_SECRET` must never change after
-launch or existing signatures stop validating.
+`PHAROS_RECEIPT_SECRET` must never change after launch or existing signatures
+stop validating.
 
-### 2. Create and fund an issuer wallet (for anchoring)
+## 3. Deploy on Vercel
 
-```bash
-npm run wallet:new
-# address:     0x...
-# privateKey:  0x...
-```
-
-Fund the **address** with Sepolia ETH from a faucet, then keep the private key
-secret. This is a hot wallet — fund it with only what you need for gas.
-
-### 3. Deploy the registry to Sepolia
-
-Put the key and an RPC URL in a local `.env` (never committed):
-
-```bash
-PHAROS_ISSUER_PRIVATE_KEY=0x...
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/<project-id>
-```
-
-```bash
-npm run deploy:sepolia
-```
-
-The script prints the network, deployer balance and the values to set in Render:
-
-```
-PHAROS_RECEIPT_REGISTRY_ADDRESS=0x...
-PHAROS_ISSUER_ADDRESS=0x...
-PHAROS_RPC_URL=<your Sepolia RPC url>
-```
-
-### 4. Deploy on Render
-
-1. Render Dashboard → **New → Blueprint** → pick this repo.
-2. Render reads `render.yaml` and creates the `folio` web service with a 1 GB
-   disk mounted at `/var/data`.
-3. Render prompts for the `sync: false` secrets. Fill in:
+1. **Add New → Project** → import the `Ezekiel544/Folio` repo.
+2. Framework preset: **Next.js** (auto-detected). Leave build/install defaults.
+3. Under **Environment Variables**, add the required ones:
 
    | Key | Value |
    | --- | --- |
-   | `PHAROS_API_KEY` | from step 1 |
-   | `PHAROS_RECEIPT_SECRET` | from step 1 |
-   | `PHAROS_SESSION_SECRET` | from step 1 |
-   | `PHAROS_RPC_URL` | Sepolia RPC URL (step 3) |
-   | `PHAROS_ISSUER_PRIVATE_KEY` | issuer key (step 2) |
-   | `PHAROS_RECEIPT_REGISTRY_ADDRESS` | from step 3 |
-   | `PHAROS_ISSUER_ADDRESS` | from step 3 |
+   | `PHAROS_API_KEY` | from step 2 |
+   | `PHAROS_RECEIPT_SECRET` | from step 2 |
+   | `PHAROS_SESSION_SECRET` | from step 2 |
+   | `DATABASE_URL` | from step 1 |
 
-   To run fully offchain, leave the last four blank.
-4. Deploy. Render runs `npm ci --include=dev && npm run build`, then `npm start`.
+4. Deploy. Vercel runs `next build` and hosts the app serverlessly.
 
-## How `render.yaml` is wired
+## 4. Optional — onchain anchoring (Sepolia)
 
-- **`plan: starter`** — required for the disk block.
-- **`disk.mountPath: /var/data`** + **`PHAROS_DATA_DIR=/var/data`** — where
-  `receipts.db` lives. It survives redeploys because it's outside the image.
-- **`NODE_VERSION=22.11.0`** — `better-sqlite3` refuses to build on older Node.
-- **`buildCommand` uses `--include=dev`** — Next's build needs TypeScript,
-  Tailwind and PostCSS, which are devDependencies.
-- **`healthCheckPath: /`** — Render marks the deploy live once `/` returns 200.
-- **`sync: false`** — secrets are entered in the dashboard, never in git.
+Leave these unset to run fully offchain (`onchain.configured: false`). To anchor
+each receipt onchain:
 
-Keep the service at **one instance**. Two instances would open the same SQLite
-file from separate disks and diverge.
+```bash
+npm run wallet:new
+# fund the address with Sepolia ETH, then:
+SEPOLIA_RPC_URL=<provider url> PHAROS_ISSUER_PRIVATE_KEY=<key> npm run deploy:sepolia
+```
+
+Add the printed values as Vercel env vars: `PHAROS_RPC_URL`,
+`PHAROS_ISSUER_PRIVATE_KEY`, `PHAROS_RECEIPT_REGISTRY_ADDRESS`,
+`PHAROS_ISSUER_ADDRESS`.
 
 ## Environment variables
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
+| `DATABASE_URL` | yes | Supabase Postgres **transaction pooler** URL |
 | `PHAROS_API_KEY` | yes | Business API key (`x-api-key`) |
 | `PHAROS_RECEIPT_SECRET` | yes | HMAC key signing every receipt |
 | `PHAROS_SESSION_SECRET` | yes | Signs the wallet session cookie |
-| `PHAROS_DATA_DIR` | yes on host | Persistent path, e.g. `/var/data` |
 | `PHAROS_ALLOW_CLIENT_ISSUE` | no | Leave unset (false) in production |
 | `PHAROS_RPC_URL` | optional | Chain RPC the app anchors through |
 | `PHAROS_ISSUER_PRIVATE_KEY` | optional | Hot wallet that writes anchors |
 | `PHAROS_RECEIPT_REGISTRY_ADDRESS` | optional | Deployed `ReceiptRegistry` |
 | `PHAROS_ISSUER_ADDRESS` | optional | Issuer wallet address |
 | `SEPOLIA_RPC_URL` | deploy only | Used by `npm run deploy:sepolia`, not the app |
+| `PHAROS_DB_TABLE` | no | Table name; defaults to `receipts` (tests use `receipts_test`) |
 
-In production there is no fallback for the three secrets — the app throws if one
-is missing rather than silently using a public default.
+In production there is no fallback for the four required values — the app throws
+if one is missing rather than silently using a public default.
+
+## Local development
+
+```bash
+cp .env.example .env     # fill in the values
+npm install
+npm run dev
+```
+
+## Tests
+
+```bash
+npm run test:lib     # API/domain tests — hit DATABASE_URL, isolated table
+npm run test:contract
+```
+
+The lib tests write to a `receipts_test` table and delete its rows on each run,
+so they never touch production data.
 
 ## Verify after deploy
 
-- [ ] `https://<service>.onrender.com/` returns 200.
+- [ ] `https://<app>.vercel.app/` returns 200.
 - [ ] Wallet connect → sign-in → dashboard loads.
 - [ ] Issue a receipt through the SDK with `x-api-key`.
 - [ ] Open `/receipt/<id>` — payload renders, verification shows valid.
 - [ ] `GET /api/receipts/<id>/verify` returns `{ "valid": true }`.
-- [ ] Restart the service; the receipt is still there (disk works).
-- [ ] If anchoring: the receipt proof shows an `onchain.txHash`.
+- [ ] Data persists across a redeploy (it lives in Supabase, not the host).
 
-For a real SDK call against production, the client base URL is the Render URL:
+For a real SDK call against production:
 
 ```ts
 import { FolioReceipts } from "./src/lib/folio-receipts-sdk";
-const client = new FolioReceipts("https://<service>.onrender.com", process.env.PHAROS_API_KEY!);
+const client = new FolioReceipts("https://<app>.vercel.app", process.env.PHAROS_API_KEY!);
 ```
 
 ## Backups
 
-The entire dataset is one file. Back it up from a Render shell or cron job:
+Supabase takes automated backups (daily on paid plans; use **Database → Backups**
+or `pg_dump` on free tier):
 
 ```bash
-sqlite3 "$PHAROS_DATA_DIR/receipts.db" ".backup '/var/data/backup-$(date +%F).db'"
+pg_dump "$DATABASE_URL" > folio-$(date +%F).sql
 ```
 
 Store `PHAROS_RECEIPT_SECRET` with the backups — without the signing key the
 database cannot validate its own receipts.
-
-## Not recommended: Vercel / serverless
-
-Vercel wipes the filesystem between requests, so receipts vanish on every
-deploy and cold start, and `better-sqlite3` (a native module) is not supported.
-If you must use serverless, the storage layer in `src/lib/db.ts` has to be
-swapped for a hosted database first.

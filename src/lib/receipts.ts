@@ -5,7 +5,13 @@ import {
   signaturesEqual,
   signObject,
 } from "./canonical.ts";
-import { getDb, type ReceiptRow } from "./db.ts";
+import {
+  queryAll,
+  queryOne,
+  run,
+  tableName,
+  type ReceiptRow,
+} from "./db.ts";
 import {
   anchorIssue,
   anchorRevoke,
@@ -125,28 +131,28 @@ export function assertIssuePayload(value: unknown): asserts value is NewReceipt 
   }
 }
 
-function rowFromReceipt(
+function rowValues(
   receipt: Receipt,
   extra?: { onchainTxHash?: string | null },
-): Record<string, unknown> {
+): unknown[] {
   const now = new Date().toISOString();
-  return {
-    id: receipt.id,
-    receipt_json: JSON.stringify(receipt),
-    buyer_id: receipt.buyer.id,
-    buyer_wallet: receipt.buyer.wallet ?? null,
-    current_owner: receipt.ownership.currentOwner,
-    status: receipt.ownership.status,
-    seller_name: receipt.seller.name,
-    product_name: receipt.product.name,
-    purchased_at: receipt.purchasedAt,
-    amount: receipt.payment.amount,
-    currency: receipt.payment.currency,
-    payment_reference: receipt.payment.reference,
-    onchain_tx_hash: extra?.onchainTxHash ?? null,
-    created_at: now,
-    updated_at: now,
-  };
+  return [
+    receipt.id,
+    JSON.stringify(receipt),
+    receipt.buyer.id,
+    receipt.buyer.wallet ?? null,
+    receipt.ownership.currentOwner,
+    receipt.ownership.status,
+    receipt.seller.name,
+    receipt.product.name,
+    receipt.purchasedAt,
+    receipt.payment.amount,
+    receipt.payment.currency,
+    receipt.payment.reference,
+    extra?.onchainTxHash ?? null,
+    now,
+    now,
+  ];
 }
 
 function receiptFromRow(row: ReceiptRow): Receipt {
@@ -182,10 +188,11 @@ async function anchor(
   }
 }
 
-function txHashFor(db: ReturnType<typeof getDb>, id: string): string | null {
-  const row = db.prepare("SELECT onchain_tx_hash FROM receipts WHERE id = ?").get(id) as
-    | { onchain_tx_hash: string | null }
-    | undefined;
+async function txHashFor(id: string): Promise<string | null> {
+  const row = await queryOne<{ onchain_tx_hash: string | null }>(
+    `SELECT onchain_tx_hash FROM ${tableName()} WHERE id = $1`,
+    [id],
+  );
   return row?.onchain_tx_hash ?? null;
 }
 
@@ -221,42 +228,51 @@ export async function issueReceipt(input: NewReceipt): Promise<Receipt> {
     proof: { algorithm: "HMAC-SHA256", signature: signObject(unsigned), issuedAt: now },
   };
 
-  const db = getDb();
-  db.prepare(
-    `INSERT OR REPLACE INTO receipts
+  const t = tableName();
+  await run(
+    `INSERT INTO ${t}
       (id, receipt_json, buyer_id, buyer_wallet, current_owner, status,
        seller_name, product_name, purchased_at, amount, currency,
        payment_reference, onchain_tx_hash, created_at, updated_at)
      VALUES
-      (@id, @receipt_json, @buyer_id, @buyer_wallet, @current_owner, @status,
-       @seller_name, @product_name, @purchased_at, @amount, @currency,
-       @payment_reference, @onchain_tx_hash, @created_at, @updated_at)`,
-  ).run(rowFromReceipt(receipt));
+      ($1, $2, $3, $4, $5, $6,
+       $7, $8, $9, $10, $11,
+       $12, $13, $14, $15)
+     ON CONFLICT (id) DO UPDATE SET
+      receipt_json = EXCLUDED.receipt_json,
+      buyer_id = EXCLUDED.buyer_id,
+      buyer_wallet = EXCLUDED.buyer_wallet,
+      current_owner = EXCLUDED.current_owner,
+      status = EXCLUDED.status,
+      updated_at = EXCLUDED.updated_at`,
+    rowValues(receipt),
+  );
 
   const anchoring = await anchor(receipt);
   if (anchoring) {
-    db.prepare(
-      "UPDATE receipts SET onchain_tx_hash = ?, updated_at = ? WHERE id = ?",
-    ).run(anchoring.txHash, now, receipt.id);
+    await run(
+      `UPDATE ${t} SET onchain_tx_hash = $1, updated_at = $2 WHERE id = $3`,
+      [anchoring.txHash, now, receipt.id],
+    );
   }
 
   return withOnchain(receipt, anchoring?.txHash ?? null);
 }
 
 export async function listReceipts(identity?: string): Promise<Receipt[]> {
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT * FROM receipts ORDER BY created_at DESC")
-    .all() as unknown as ReceiptRow[];
+  const rows = await queryAll<ReceiptRow>(
+    `SELECT * FROM ${tableName()} ORDER BY created_at DESC`,
+  );
   const all = rows.map((row) => normalizeReceipt(receiptFromRow(row)));
   if (!identity) return all;
   return all.filter((receipt) => receiptIdentifies(receipt, identity));
 }
 
 export async function getReceipt(id: string): Promise<Receipt | null> {
-  const row = getDb().prepare("SELECT * FROM receipts WHERE id = ?").get(id) as
-    | ReceiptRow
-    | undefined;
+  const row = await queryOne<ReceiptRow>(
+    `SELECT * FROM ${tableName()} WHERE id = $1`,
+    [id],
+  );
   return row ? receiptFromRow(row) : null;
 }
 
@@ -280,7 +296,7 @@ export async function verifyReceipt(id: string): Promise<VerifyResult> {
       owner: proofResult.owner,
       chainId: proofResult.chainId,
       registry: proofResult.registry,
-      txHash: txHashFor(getDb(), id) ?? undefined,
+      txHash: (await txHashFor(id)) ?? undefined,
       error: proofResult.error,
     };
   }
@@ -303,10 +319,10 @@ export async function transferReceipt(
   options: { by?: string; reference?: string } = {},
 ): Promise<Receipt | null> {
   if (!to || to.trim() === "") throw new Error("A destination identity is required.");
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM receipts WHERE id = ?").get(id) as
-    | ReceiptRow
-    | undefined;
+  const row = await queryOne<ReceiptRow>(
+    `SELECT * FROM ${tableName()} WHERE id = $1`,
+    [id],
+  );
   if (!row) return null;
   const receipt = normalizeReceipt(receiptFromRow(row));
 
@@ -346,19 +362,21 @@ export async function transferReceipt(
     },
   };
 
-  db.prepare(
-    `UPDATE receipts SET
-      receipt_json = ?, buyer_id = ?, buyer_wallet = ?, current_owner = ?,
-      status = ?, updated_at = ?
-     WHERE id = ?`,
-  ).run(
-    JSON.stringify(updated),
-    updated.buyer.id,
-    updated.buyer.wallet ?? null,
-    updated.ownership.currentOwner,
-    updated.ownership.status,
-    new Date().toISOString(),
-    id,
+  const now = new Date().toISOString();
+  await run(
+    `UPDATE ${tableName()} SET
+      receipt_json = $1, buyer_id = $2, buyer_wallet = $3, current_owner = $4,
+      status = $5, updated_at = $6
+     WHERE id = $7`,
+    [
+      JSON.stringify(updated),
+      updated.buyer.id,
+      updated.buyer.wallet ?? null,
+      updated.ownership.currentOwner,
+      updated.ownership.status,
+      now,
+      id,
+    ],
   );
 
   let anchoring: { txHash: string; chainId: bigint } | null = null;
@@ -377,23 +395,23 @@ export async function transferReceipt(
     }
   }
   if (anchoring) {
-    db.prepare("UPDATE receipts SET onchain_tx_hash = ? WHERE id = ?").run(
-      anchoring.txHash,
-      id,
+    await run(
+      `UPDATE ${tableName()} SET onchain_tx_hash = $1 WHERE id = $2`,
+      [anchoring.txHash, id],
     );
   }
 
-  return withOnchain(updated, anchoring?.txHash ?? txHashFor(db, id));
+  return withOnchain(updated, anchoring?.txHash ?? (await txHashFor(id)));
 }
 
 export async function revokeReceipt(
   id: string,
   options: { by?: string; reason?: string } = {},
 ): Promise<Receipt | null> {
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM receipts WHERE id = ?").get(id) as
-    | ReceiptRow
-    | undefined;
+  const row = await queryOne<ReceiptRow>(
+    `SELECT * FROM ${tableName()} WHERE id = $1`,
+    [id],
+  );
   if (!row) return null;
   const receipt = normalizeReceipt(receiptFromRow(row));
   if (receipt.ownership.status === "revoked") {
@@ -422,16 +440,17 @@ export async function revokeReceipt(
     },
   };
 
-  db.prepare(
-    `UPDATE receipts SET
-      receipt_json = ?, status = ?, current_owner = ?, updated_at = ?
-     WHERE id = ?`,
-  ).run(
-    JSON.stringify(updated),
-    updated.ownership.status,
-    updated.ownership.currentOwner,
-    new Date().toISOString(),
-    id,
+  await run(
+    `UPDATE ${tableName()} SET
+      receipt_json = $1, status = $2, current_owner = $3, updated_at = $4
+     WHERE id = $5`,
+    [
+      JSON.stringify(updated),
+      updated.ownership.status,
+      updated.ownership.currentOwner,
+      new Date().toISOString(),
+      id,
+    ],
   );
 
   let anchoring: { txHash: string; chainId: bigint } | null = null;
@@ -445,9 +464,9 @@ export async function revokeReceipt(
     }
   }
   if (anchoring) {
-    db.prepare("UPDATE receipts SET onchain_tx_hash = ? WHERE id = ?").run(
-      anchoring.txHash,
-      id,
+    await run(
+      `UPDATE ${tableName()} SET onchain_tx_hash = $1 WHERE id = $2`,
+      [anchoring.txHash, id],
     );
   }
 

@@ -1,20 +1,17 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 
 process.env.PHAROS_RECEIPT_SECRET = "pharos-test-receipt-secret";
 process.env.PHAROS_SESSION_SECRET = "pharos-test-session-secret";
 process.env.PHAROS_API_KEY = "pharos-test-api-key";
 process.env.NODE_ENV = "test";
+process.env.PHAROS_DB_TABLE = "receipts_test";
 
-const { closeDb, getDb } = await import("../../src/lib/db.ts");
+const { closeDb, run, queryOne, tableName } = await import("../../src/lib/db.ts");
 const {
   issueReceipt,
   verifyReceipt,
   listReceipts,
-  getReceipt,
   transferReceipt,
   revokeReceipt,
   identitiesMatch,
@@ -39,16 +36,12 @@ function issueInput(overrides: Record<string, unknown> = {}) {
   };
 }
 
-before(() => {
-  process.env.PHAROS_DATA_DIR = mkdtempSync(
-    path.join(tmpdir(), "pharos-test-"),
-  );
+before(async () => {
+  await run(`DELETE FROM ${tableName()}`);
 });
 
-after(() => {
-  closeDb();
-  const dir = process.env.PHAROS_DATA_DIR!;
-  rmSync(dir, { recursive: true, force: true });
+after(async () => {
+  await closeDb();
 });
 
 test("issueReceipt creates a signed, owned receipt", async () => {
@@ -72,15 +65,16 @@ test("verifyReceipt passes for a freshly issued receipt", async () => {
 
 test("verifyReceipt fails when the stored receipt is tampered with", async () => {
   const receipt = await issueReceipt(issueInput() as never);
-  const db = getDb();
-  const row = db
-    .prepare("SELECT * FROM receipts WHERE id = ?")
-    .get(receipt.id) as { receipt_json: string };
-  const stored = JSON.parse(row.receipt_json);
+  const stored = JSON.parse(
+    (await queryOne<{ receipt_json: string }>(
+      `SELECT receipt_json FROM ${tableName()} WHERE id = $1`,
+      [receipt.id],
+    ))!.receipt_json,
+  );
   stored.payment.amount = 999999;
-  db.prepare("UPDATE receipts SET receipt_json = ? WHERE id = ?").run(
-    JSON.stringify(stored),
-    receipt.id,
+  await run(
+    `UPDATE ${tableName()} SET receipt_json = $1 WHERE id = $2`,
+    [JSON.stringify(stored), receipt.id],
   );
   const result = await verifyReceipt(receipt.id);
   assert.equal(result.valid, false);
@@ -230,20 +224,22 @@ test("revokeReceipt verifies when the optional reason is omitted", async () => {
 
 test("a stored receipt with no rights key still verifies and normalizes to []", async () => {
   const receipt = await issueReceipt(issueInput() as never);
-  const db = getDb();
-  const row = db
-    .prepare("SELECT * FROM receipts WHERE id = ?")
-    .get(receipt.id) as { receipt_json: string };
+  const stored = JSON.parse(
+    (await queryOne<{ receipt_json: string }>(
+      `SELECT receipt_json FROM ${tableName()} WHERE id = $1`,
+      [receipt.id],
+    ))!.receipt_json,
+  );
 
   // Simulate a record written before `rights` was persisted: remove the key and
   // re-sign so it is a genuinely valid legacy payload.
-  const legacy = JSON.parse(row.receipt_json);
+  const legacy = stored;
   delete legacy.rights;
   const { proof: _proof, ...unsigned } = legacy;
   legacy.proof.signature = signObject(unsigned);
-  db.prepare("UPDATE receipts SET receipt_json = ? WHERE id = ?").run(
-    JSON.stringify(legacy),
-    receipt.id,
+  await run(
+    `UPDATE ${tableName()} SET receipt_json = $1 WHERE id = $2`,
+    [JSON.stringify(legacy), receipt.id],
   );
 
   const verified = await verifyReceipt(receipt.id);
@@ -258,3 +254,4 @@ test("a stored receipt with no rights key still verifies and normalizes to []", 
   assert.deepEqual(listed!.rights, []);
   assert.deepEqual(listed!.transfers, []);
 });
+
