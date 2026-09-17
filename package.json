@@ -20,11 +20,15 @@
     "test:lib": "node --env-file-if-exists=.env --test 'test/lib/**/*.test.ts'"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@tanstack/react-query": "^5.103.1",
     "ethers": "^6.17.0",
     "next": "14.2.5",
     "pg": "^8.23.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "viem": "^2.56.7",
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.1.3",
