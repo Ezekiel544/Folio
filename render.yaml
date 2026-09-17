@@ -1,0 +1,46 @@
+# Render blueprint for Folio.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> point at this repo.
+# The `disk` block requires a paid instance type (Starter or higher) because
+# SQLite needs a persistent filesystem. Secrets use `sync: false`, so Render
+# prompts for them on first deploy and never stores them in git.
+
+services:
+  - type: web
+    name: folio
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    disk:
+      name: folio-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      # better-sqlite3 requires Node >= 22.
+      - key: NODE_VERSION
+        value: "22.11.0"
+      - key: PHAROS_DATA_DIR
+        value: /var/data
+      - key: NODE_ENV
+        value: production
+      # Secrets — set these in the Render dashboard (sync: false).
+      - key: PHAROS_API_KEY
+        sync: false
+      - key: PHAROS_RECEIPT_SECRET
+        sync: false
+      - key: PHAROS_SESSION_SECRET
+        sync: false
+      # Onchain anchoring (Sepolia). Leave blank to run fully offchain.
+      - key: PHAROS_RPC_URL
+        sync: false
+      - key: PHAROS_ISSUER_PRIVATE_KEY
+        sync: false
+      - key: PHAROS_RECEIPT_REGISTRY_ADDRESS
+        sync: false
+      - key: PHAROS_ISSUER_ADDRESS
+        sync: false

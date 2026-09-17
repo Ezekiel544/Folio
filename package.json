@@ -1,0 +1,43 @@
+{
+  "name": "folio",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.ts",
+    "deploy:pharos": "hardhat run scripts/deploy.ts --network pharos",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "wallet:new": "node -e \"const {Wallet}=require('ethers');const w=Wallet.createRandom();console.log('address:    ',w.address);console.log('privateKey: ',w.privateKey);\"",
+    "test": "hardhat test && node --test 'test/lib/**/*.test.ts'",
+    "test:contract": "hardhat test",
+    "test:lib": "node --test 'test/lib/**/*.test.ts'"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "ethers": "^6.17.0",
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.1.3",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "dotenv": "^17.4.2",
+    "hardhat": "^2.29.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
