@@ -143,14 +143,14 @@ export default function Hero() {
                 color: "#0A0A0A",
               }}
             >
-              <FolioMark />{" "}
+              {/* <FolioMark />{" "} */}
               <span>Every purchase becomes</span>
               <br />
-              <span>a portable proof —</span>
+              <span>a portable proof of ownership.</span>
               <br />
-              <span>signed, owned, and</span>
+              {/* <span>signed, owned, and</span>
               <br />
-              <span>ready to transfer</span>
+              <span>ready to transfer</span> */}
             </h1>
 
             {/* CTA buttons */}

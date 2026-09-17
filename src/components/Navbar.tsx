@@ -152,8 +152,8 @@ export default function Navbar() {
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-5">
 
-            {/* Social icons */}
-            <div className="flex items-center gap-4 text-[#0A0A0A]">
+           
+            {/* <div className="flex items-center gap-4 text-[#0A0A0A]">
               <a
                 href="#"
                 aria-label="X / Twitter"
@@ -177,7 +177,7 @@ export default function Navbar() {
               >
                 <LinkedInIcon />
               </a>
-            </div>
+            </div> */}
 
             {/* CTA */}
             <WalletConnectButton />
