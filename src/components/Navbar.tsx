@@ -278,7 +278,7 @@ export default function Navbar() {
             >
               <XIcon />
             </a>
-
+{/* 
             <a
               href="#"
               aria-label="Discord"
@@ -293,7 +293,7 @@ export default function Navbar() {
               className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
             >
               <LinkedInIcon />
-            </a>
+            </a> */}
           </div>
 
           {/* CTA */}
