@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { verifyReceipt } from "@/lib/receipts";
+import Logo from "@/components/Logo";
 
 export const dynamic = "force-dynamic";
 
@@ -37,11 +38,8 @@ export default async function ReceiptPage({
     <main className="min-h-screen bg-[#f7f7fa] text-[#0a0a14]">
       <header className="sticky top-0 z-10 border-b border-[#e7e7ee] bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-[73px] max-w-[980px] items-center justify-between px-5 sm:px-8">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#1200cc] text-lg font-bold text-white">F</span>
-            <span className="text-lg font-semibold tracking-[-.04em]">
-              folio<span className="text-[#1200cc]">.</span>receipt
-            </span>
+          <a href="/" className="flex items-center">
+            <Logo size={28} />
           </a>
           <a
             href="/dashboard"

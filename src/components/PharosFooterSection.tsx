@@ -1,5 +1,7 @@
 "use client";
 
+import Logo from "./Logo";
+
 const ArrowUpRight = () => (
   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
     <path d="M3 12 12 3m0 0H5m7 0v7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -66,7 +68,7 @@ export default function PharosFooterSection() {
         <footer className="pharos-footer">
           <div className="pharos-footer-grid">
             <div className="pharos-footer-brand">
-              <div className="pharos-logo"><span style={{ display: "inline-grid", placeItems: "center", width: 24, height: 24, borderRadius: 5, background: "#fff", color: "#343434", fontSize: 15, fontWeight: 800 }}>F</span>FOLIO</div>
+              <div className="pharos-logo"><Logo size={30} style={{ borderRadius: 6, }} /></div>
               <div className="pharos-socials">
                 <a href="#x" aria-label="X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />

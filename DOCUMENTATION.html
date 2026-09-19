@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Folio — Technical Documentation</title>
+<style>
+  :root{--brand:#1200cc;--ink:#17171f;--muted:#5c5c68;--line:#e5e5ed;--tint:#eeedff;--dark:#0a0a14;}
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);line-height:1.55;margin:0;background:#f6f6f9;}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 28px 80px;background:#fff;min-height:100vh;box-shadow:0 0 40px rgba(18,0,204,.06);}
+  code{font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:#f2f2f6;border:1px solid #ececf2;border-radius:6px;padding:.12em .35em;color:#3a1fd6;}
+  pre{font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.5;background:var(--dark);color:#e7e7f5;border-radius:14px;padding:18px 20px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;border:1px solid #26263a;}
+  pre code{background:none;border:0;color:inherit;padding:0;}
+  h1{font-size:34px;letter-spacing:-.03em;margin:40px 0 8px;}
+  h2.section{font-size:22px;letter-spacing:-.02em;margin:44px 0 6px;padding-top:18px;border-top:2px solid var(--brand);color:var(--brand);}
+  h2.section::before{content:"§ ";opacity:.5;}
+  h3{font-size:17px;margin:26px 0 6px;color:#1d1dd8;}
+  p{margin:10px 0;font-size:15px;}
+  ul{margin:10px 0;padding-left:22px;font-size:15px;}
+  li{margin:4px 0;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:block;overflow-x:auto;}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{background:var(--tint);color:var(--brand);font-weight:650;font-size:12.5px;}
+  tr:last-child td{border-bottom:0;}
+  td code,th code{background:rgba(18,0,204,.06);border-color:transparent;}
+  hr{border:0;border-top:1px solid var(--line);margin:28px 0;}
+  .codeblock{margin:14px 0;}
+  .codelabel{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-left:6px;margin-bottom:6px;}
+  pre.mermaid{background:#fff;color:var(--ink);border:1px solid var(--line);line-height:1.35;}
+  .cover{background:linear-gradient(135deg,#1200cc 0%,#3a1fd6 55%,#0a0a14 100%);color:#fff;border-radius:20px;padding:34px 34px 26px;margin-bottom:34px;}
+  .cover-brand{display:flex;align-items:center;gap:10px;}
+  .cover-logo{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#fff;color:var(--brand);font-weight:800;font-size:20px;}
+  .cover-name{font-size:18px;font-weight:700;}
+  .cover-name span{color:#9dd;}
+  .cover-kicker{font-size:11.5px;letter-spacing:.28em;margin:26px 0 6px;opacity:.75;font-weight:700;}
+  .cover-title{font-size:36px;letter-spacing:-.03em;line-height:1.1;margin:0 0 18px;}
+  .cover-meta{display:flex;flex-wrap:wrap;gap:8px;}
+  .cover-meta span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 14px;font-size:12.5px;}
+  .cover-meta b{font-weight:700;}
+  .cover-note{margin:18px 0 0;font-size:12.5px;opacity:.7;}
+  .print-btn{position:fixed;right:18px;bottom:18px;background:var(--brand);color:#fff;border:0;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(18,0,204,.35);}
+  .print-btn:hover{opacity:.9;}
+  footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;}
+  @media print{
+    body{background:#fff;}
+    .wrap{box-shadow:none;max-width:none;padding:0;}
+    .print-btn{display:none;}
+    .cover{page-break-after:always;border-radius:0;}
+    h2.section{break-before:page;}
+    pre,table,.codeblock{break-inside:avoid;}
+    a{color:inherit;text-decoration:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="cover">
+  <div class="cover-brand"><span class="cover-logo">F</span><span class="cover-name">folio<span>.</span>receipt</span></div>
+  <p class="cover-kicker">TECHNICAL DOCUMENTATION</p>
+  <h1 class="cover-title">Portable Receipt Layer<br>for Digital Commerce</h1>
+  <div class="cover-meta">
+    <span><b>Stack</b> Next.js 14 · TypeScript · Tailwind · Wagmi + RainbowKit</span>
+    <span><b>Contracts</b> Solidity 0.8.24 · Hardhat · ethers v6</span>
+    <span><b>Storage</b> Supabase Postgres (pooler)</span>
+  </div>
+  <p class="cover-note">Force this document into PDF · <code>npm run dev</code> &rarr; hold the same proof on-chain and off-chain</p>
+</section><h1 class="subsection">Folio — Portable Receipt Layer for Digital Commerce</h1><p><strong>Network:</strong> Any EVM network the issuer deploys to (local Hardhat, Sepolia, or a custom <code>pharos</code> RPC network)</p><p><strong>Web3 Wallet Stack:</strong> wagmi + RainbowKit (<code>@rainbow-me/rainbowkit</code>, <code>@tanstack/react-query</code>, <code>viem</code>) with WalletConnect project ID</p><p><strong>Smart Contract Framework:</strong> Solidity 0.8.24 / Hardhat / ethers v6</p><p><strong>Frontend Architecture:</strong> Next.js 14 (App Router) + TypeScript + Tailwind CSS</p><p><strong>Storage:</strong> Supabase Postgres via <code>pg</code> (transaction pooler)</p><hr><h2 class="section">1. Executive Summary</h2><p>Avox-style TCGs mint static cards with fixed attributes. Folio takes the opposite approach for commerce: <strong>a receipt is a living, verifiable document whose integrity is enforced at every mutation</strong> — product, buyer, seller, purchase date, payment reference, transfer history, rights and warranty — wrapped in a tamper-evident signature and optionally anchored on-chain.</p><p>In traditional e-commerce, a "receipt" is a blob your vendor controls; there is no portable way to prove purchase, ownership, or rights to a third party. Folio fixes that with three synchronized guarantees:</p><ul><li><strong>Signed portability</strong> — every receipt carries an <strong>HMAC-SHA256 signature</strong> over a deterministic canonical JSON payload. The signature is stable regardless of object key order, so the same receipt verifies byte-for-byte across languages, systems and re-serialisations.</li><li><strong>Ownership &amp; provenance</strong> — receipts can move between buyers. Each transfer appends a <strong>signed history entry</strong>, and ownership is checked against <strong>normalized identities</strong> (checksummed, case-folded wallets or human-readable ids) so a wallet always matches regardless of casing.</li><li><strong>On-chain verifiability</strong> — each receipt is optionally anchored in a <strong><code>ReceiptRegistry.sol</code></strong> contract that stores the receipt's hash, issuer, owner, issued-at time and revocation flag. The registry is the canonical on-chain source of truth; the full receipt stays off-chain and portable.</li></ul><p>Every asset in the Folio ecosystem is verifiable:</p><ul><li>Receipts are <strong>signed on issue</strong> and re-signed on every transfer/revoke, keeping the provenance chain intact. (Receipt registry — like an ERC-721 collection — tracks ownership and transfer/revocation on-chain.)</li><li><strong>Transfer</strong> and <strong>revoke</strong> are atomic, permission-checked operations that mirror the registry's <code>Only owner</code> / <code>Only issuer</code> / <code>Only admin</code> rules.</li><li>Verification compares the <strong>off-chain signature</strong> and the <strong>on-chain anchor hash</strong> together — tamper with the payload, break the signature; rewrite the payload, break the on-chain match.</li></ul><hr><h2 class="section">2. High-Level Architecture</h2><p>Folio is composed of six synchronized layers:</p><div class="codeblock"><span class="codelabel">mermaid</span><pre class="mermaid">flowchart TB
+    subgraph Client ["Frontend &amp; Presentation Layer (Next.js 14 + Tailwind)"]
+        UI["Landing · Dashboard · Public /receipt/[id] page"]
+        AuthCtx["WalletAuthProvider (session restore + connect)"]
+        Dash["Dashboard: issue, list, verify, transfer, revoke"]
+    end
+
+    subgraph Web3 ["Web3 &amp; Connectivity Layer"]
+        RainbowKit["wagmi + RainbowKit (WalletConnect project ID)"]
+        Ethers["ethers v6 Wallet / JsonRpcProvider"]
+    end
+
+    subgraph API ["API &amp; SDK Layer (App Router Route Handlers)"]
+        AuthRoutes["/api/auth/nonce · wallet · session"]
+        ReceiptRoutes["/api/receipts · /verify · /transfer · /revoke"]
+        SDK["FolioReceipts TypeScript SDK (server-side)"]
+    end
+
+    subgraph Core ["Integrity Engine"]
+        Canonical["canonical.ts — stableStringify (sorted, compact JSON)"]
+        HMAC["HMAC-SHA256 signature (timing-safe compare)"]
+        Identity["Identity normalization &amp; matching"]
+    end
+
+    subgraph Storage ["Data Layer"]
+        DB["Supabase Postgres (transaction pooler, auto-schema)"]
+    end
+
+    subgraph Chain ["EVM Network (local / Sepolia / custom)"]
+        Registry["ReceiptRegistry.sol (proof + ownership)"]
+    end
+
+    UI --&gt; Dash
+    AuthCtx &lt;--&gt; RainbowKit
+    RainbowKit &lt;--&gt; Ethers
+    UI --&gt; AuthRoutes
+    Dash --&gt; ReceiptRoutes
+    ReceiptRoutes &lt;--&gt; SDK
+    ReceiptRoutes --&gt; Core
+    Core --&gt; Canonical
+    Core --&gt; HMAC
+    ReceiptRoutes --&gt; DB
+    Core -- "keccak256(canonical payload)" --&gt; Ethers
+    Ethers --&gt; Registry
+    Registry -- "onchain proof readback" --&gt; Core</pre></div><p>Data flows in one loop: the <strong>dashboard</strong> or <strong>SDK</strong> issues a receipt → the <strong>Integrity Engine</strong> canonicalises and signs it → the receipt is stored in <strong>Postgres</strong> and (when configured) anchored in <strong>ReceiptRegistry</strong> → <strong>verification</strong> re-derives the signature and compares the on-chain hash → the <strong>public <code>/receipt/[id]</code> page</strong> renders the verified payload and its verification status.</p><hr><h2 class="section">3. Smart Contract System &amp; On-Chain Deployments</h2><p>A single purpose-built contract is deployed and verified on the target network. It is deliberately minimal: the full receipt lives off-chain, and the registry stores only the <strong>non-reversible hash</strong> so it cannot be rewritten or repudiated.</p><h3 class="subsection">ReceiptRegistry.sol (proof &amp; ownership layer)</h3><div class="codeblock"><span class="codelabel">solidity</span><pre class="">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract ReceiptRegistry {
+    struct ReceiptProof {
+        bytes32 receiptHash;
+        address issuer;
+        address owner;
+        uint64  issuedAt;
+        bool    exists;
+        bool    revoked;
+    }
+
+    mapping(bytes32 =&gt; ReceiptProof) private receipts;
+    mapping(address =&gt; bool) public issuers;
+    address public admin;
+}</pre></div><h3 class="subsection">Storage structure</h3><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td><code>receiptHash</code></td><td><code>keccak256(canonical signed receipt payload)</code> — the tamper anchor</td></tr><tr><td><code>issuer</code></td><td>The whitelisted business that anchored the receipt</td></tr><tr><td><code>owner</code></td><td>Current owner per the chain (<code>onlyOwner</code> gates transfers)</td></tr><tr><td><code>issuedAt</code></td><td><code>block.timestamp</code> at issue</td></tr><tr><td><code>exists</code></td><td>Whether the receipt id was ever anchored</td></tr><tr><td><code>revoked</code></td><td>Revocation flag; a revoked receipt cannot be transferred</td></tr></tbody></table><h3 class="subsection">Access control</h3><ul><li><code>mintCard</code>-equivalent → <strong><code>issue(bytes32 receiptId, bytes32 receiptHash, address owner)</code></strong> is restricted to whitelisted issuers via the <code>onlyIssuer</code> modifier.</li><li><strong><code>setIssuer(address, bool)</code></strong> lets the deployer (admin) grant/revoke issuer status (<code>onlyAdmin</code>).</li><li><code>transfer</code> is gated by <code>onlyOwner</code> <strong>and</strong> rejects revoked receipts.</li><li><code>revoke</code> accepts the <strong>current owner, the issuing business, or the admin</strong>.</li></ul><h3 class="subsection">Core functions &amp; events</h3><table><thead><tr><th>Function</th><th>Signature</th><th>Access</th><th>Purpose</th></tr></thead><tbody><tr><td><code>issue</code></td><td><code>(bytes32 receiptId, bytes32 receiptHash, address owner)</code></td><td><code>onlyIssuer</code></td><td>Anchor a newly issued receipt; rejects duplicates</td></tr><tr><td><code>transfer</code></td><td><code>(bytes32 receiptId, address to)</code></td><td><code>onlyOwner</code></td><td>Move on-chain ownership; blocks revoked receipts</td></tr><tr><td><code>revoke</code></td><td><code>(bytes32 receiptId)</code></td><td>owner / issuer / admin</td><td>Set the revoked flag</td></tr><tr><td><code>get</code></td><td><code>(bytes32 receiptId) view returns (ReceiptProof)</code></td><td>public</td><td>Read the on-chain proof</td></tr></tbody></table><div class="codeblock"><span class="codelabel">solidity</span><pre class="">event ReceiptIssued(bytes32 indexed receiptId, bytes32 indexed receiptHash, address indexed owner, address issuer);
+event ReceiptTransferred(bytes32 indexed receiptId, address indexed from, address indexed to);
+event ReceiptRevoked(bytes32 indexed receiptId, address indexed by);
+event IssuerUpdated(address indexed issuer, bool allowed);</pre></div><h3 class="subsection">On-chain wiring (scripts/deploy.ts)</h3><ul><li><strong><code>npm run deploy</code></strong> — default in-process Hardhat network; prints the registry address.</li><li><strong><code>npm run deploy:pharos</code></strong> — against <code>PHAROS_RPC_URL</code> (custom <code>pharos</code> network).</li><li><strong><code>npm run deploy:sepolia</code></strong> — public Sepolia testnet (chainId 11155111).</li><li>The deployer becomes <code>admin</code>; the deployer address (or <code>PHAROS_ISSUER_ADDRESS</code>) is set as the initial whitelisted issuer.</li></ul><p><strong>Optional activation.</strong> Anchoring engages only when all three are set — <code>PHAROS_RPC_URL</code>, <code>PHAROS_RECEIPT_REGISTRY_ADDRESS</code>, <code>PHAROS_ISSUER_PRIVATE_KEY</code> (<code>isOnchainConfigured()</code>). When unset, everything works fully off-chain and <code>onchain.configured: false</code> is reported by verification.</p><hr><h2 class="section">4. Signature &amp; Integrity Engine</h2><p>The core differentiator is deterministic, language-agnostic signing.</p><h3 class="subsection">Canonical serialization (<code>src/lib/canonical.ts</code>)</h3><p><code>stableStringify</code> produces byte-identical JSON for structurally identical receipts:</p><ul><li>Object keys are <strong>sorted recursively</strong>.</li><li>No whitespace.</li><li><code>undefined</code> properties are dropped (matching JSON semantics), so a store→parse round-trip never changes the canonical bytes.</li></ul><h3 class="subsection">Signature scheme</h3><div class="codeblock"><span class="codelabel">text</span><pre class="">signature = HMAC-SHA256(PHAROS_RECEIPT_SECRET, stableStringify(unsignedReceipt))</pre></div><ul><li>The <code>proof</code> field itself is <strong>excluded</strong> from the signed payload and recomputed after every mutation.</li><li>Comparisons use <code>crypto.timingSafeEqual</code> to avoid timing attacks.</li><li>A <strong>legacy canonicalisation</strong> path keeps historical receipts (signed before deterministic serialization existed) validating.</li></ul><h3 class="subsection">Secret handling</h3><p>Secrets have <strong>no fallback in production</strong>. <code>env()</code> in <code>src/lib/env.ts</code> throws when a required value is missing, so the app fails loudly instead of shipping with a public default key. The signing secret must never rotate after launch, or existing signatures stop validating.</p><h3 class="subsection">Identity normalization</h3><p>Buyer/owner identities may be a human-readable id (<code>alice@example.com</code>, <code>acme#20435</code>) or a wallet (<code>0x…</code>). <code>normalizeIdentity</code> checksums and case-folds wallets and lowercases human ids, so ownership checks match regardless of casing (<code>identitiesMatch</code>). This is the receipt-world equivalent of "stat modifier clamping": the same identity, however presented, always resolves to the same canonical form.</p><hr><h2 class="section">5. Receipt Lifecycle &amp; Ownership Engine</h2><p>The receipt is a <strong>versioned document</strong> (<code>version: "1.0"</code>) with a defined mutation lifecycle designed to stay fast and auditable.</p><h3 class="subsection">Receipt shape</h3><div class="codeblock"><span class="codelabel">ts</span><pre class="">type Receipt = {
+  id: string;                     // "rcpt_&lt;uuid&gt;"
+  version: "1.0";
+  product: { name; description?; sku?; metadataUrl? };
+  buyer: { id; wallet?; email? };
+  seller: { id; name; website? };
+  purchasedAt: string;            // ISO 8601
+  payment: { amount; currency; reference; transactionHash?; chainId? };
+  ownership: { status: "owned" | "transferred" | "revoked";
+               currentOwner; transferable; revokedAt?; revocationReason? };
+  transfers: { id; from; to; at; reference? }[];
+  rights: { name; description?; expiresAt? }[];
+  warranty?: { provider; expiresAt?; supportUrl? };
+  proof: { algorithm: "HMAC-SHA256"; signature; issuedAt; onchain?: { txHash } };
+};</pre></div><h3 class="subsection">Issue</h3><p>1. <code>assertIssuePayload</code> validates the required fields.</p><p>2. Ownership defaults to the buyer (<code>currentOwner = buyer.id</code> unless overridden).</p><p>3. The unsigned payload is canonicalised and signed, then persisted via an <code>INSERT … ON CONFLICT (id) DO UPDATE</code>.</p><p>4. When anchoring is configured, <code>ReceiptRegistry.issue</code> records <code>keccak256(receipt)</code> keyed by the receipt id; the returned <code>txHash</code> is stored back into Postgres and surfaced as <code>proof.onchain</code>.</p><h3 class="subsection">Mutation rules (transfer &amp; revoke)</h3><table><thead><tr><th>Operation</th><th>Guards</th></tr></thead><tbody><tr><td><strong>Transfer</strong></td><td>destination must be non-empty · receipt must be <code>transferable</code> · must not be <code>revoked</code> · caller must be current owner or the issuing business</td></tr><tr><td><strong>Revoke</strong></td><td>must not already be revoked · caller must be owner or issuing business</td></tr></tbody></table><p>Every mutation rebuilds the payload, <strong>appends the history entry</strong>, re-signs, and (when configured) anchors the chain write — so the provenance chain stays cryptographically intact and verification re-derives the new signature rather than trusting the stored one.</p><hr><h2 class="section">6. Verification &amp; Proof Model</h2><p>Verification is the product. Anyone — a buyer, a warranty desk, a future seller — can independently check a receipt in two layers that must <strong>both</strong> hold:</p><h3 class="subsection">Layer 1 — Off-chain signature</h3><p><code>verifyReceipt</code> recomputes <code>signObject(unsigned)</code> (canonical + legacy) and compares timing-safely against the stored signature. A mismatch means the stored payload was tampered with.</p><h3 class="subsection">Layer 2 — On-chain anchor</h3><p>When anchoring is configured, the registry's <code>get(receiptIdToBytes32(id))</code> proof must satisfy:</p><div class="codeblock"><span class="codelabel">text</span><pre class="">exists === true  AND  receiptHash === keccak256(canonical payload)  AND  no read error</pre></div><p>The on-chain record also returns <code>owner</code>, <code>issuer</code>, <code>issuedAt</code>, <code>revoked</code>, <code>chainId</code> and <code>registry</code> address for the UI.</p><h3 class="subsection">API surface</h3><div class="codeblock"><span class="codelabel">json</span><pre class="">GET /api/receipts/:id/verify
+{ "valid": true, "receipt": { … }, "onchain": { "configured": true, "exists": true,
+  "matchesHash": true, "owner": "0x…", "registry": "0x…", "chainId": 11155111, "txHash": "0x…" } }</pre></div><p>A failed check returns <code>{ "valid": false, "reason": "…" }</code> with HTTP 404. The public <strong><code>/receipt/[id]</code></strong> page renders the signed payload, its <code>owned / transferred / revoked</code> status, purchase/ownership panels, rights &amp; warranty, transfer history, and a live <strong>verification status</strong> block.</p><hr><h2 class="section">7. Transfer &amp; Revocation Mechanics</h2><p>Secondary "trading" here is the movement of ownership — the receipt-ground truth when a product is resold, gifted, or reclaimed.</p><h3 class="subsection">Transfer settlement (seller → buyer)</h3><p>1. The caller provides a destination identity (<code>to</code>) and an optional <code>reference</code> ("gift", order id…).</p><p>2. Guards pass (see §5), a <code>transfer</code> record <code>{ id: tr_&lt;uuid&gt;, from, to, at, reference }</code> is appended and ownership flips to <code>transferred</code>.</p><p>3. The payload is re-signed and persisted; <code>ReceiptRegistry.transfer</code> mirrors <code>from → to</code> on-chain so the chain of custody is provable.</p><p>4. Both the old and new owner's dashboards now list the receipt under the right identity.</p><h3 class="subsection">Revocation (refund / chargeback / cancelled access)</h3><ul><li>The owner, the issuing business, or the admin may revoke (<code>revokeReceipt</code>) with an optional reason, recording <code>revokedAt</code> + <code>revocationReason</code>.</li><li>A revoked receipt <strong>cannot be transferred</strong> — enforced both off-chain (<code>transferReceipt</code> guard) and on-chain (<code>require(!receipt.revoked, …)</code>).</li><li><code>ReceiptRegistry.revoke</code> writes the flag; verification reflects the revoked statuses.</li></ul><hr><h2 class="section">8. Web3 Connectivity &amp; Session Auth</h2><h3 class="subsection">Wallet stack</h3><ul><li><strong>wagmi + RainbowKit</strong> (<code>WagmiProvider</code> → <code>QueryClientProvider</code> → <code>RainbowKitProvider</code> → <code>WalletAuthProvider</code>) in <code>src/app/providers.tsx</code>.</li><li><strong>Multi-chain aware</strong> config (<code>chains: [mainnet, sepolia]</code>) so an incoming wallet already on any network never throws a chain-configuration error.</li><li><strong><code>NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code></strong> enables WalletConnect deep-links / QR so mobile browsers can connect; injected providers work without it.</li></ul><h3 class="subsection">Sign-in flow (SIWE-style, non-custodial)</h3><p>1. <code>GET /api/auth/nonce</code> — server issues a random nonce stored in an <code>httpOnly</code> cookie (<code>pharos_nonce</code>, 5 min).</p><p>2. The wallet signs the exact EIP-191 message: <code>Sign in to Folio\nNonce: ${nonce}</code>.</p><p>3. <code>POST /api/auth/wallet</code> — the server <strong>re-recovers</strong> the signer via <code>ethers.verifyMessage</code>, checks it matches the claimed <code>address</code>, and on success sets a signed <code>pharos_session</code> cookie.</p><h3 class="subsection">Session cookie</h3><ul><li>7-day lifetime, <code>httpOnly</code>, <code>SameSite=Lax</code>, <code>Secure</code> in production.</li><li>Value is <code>wallet.issuedAt</code> + an HMAC-SHA256 tag (<code>signSession</code>), and is <strong>verified</strong> (including a 7-day expiry check) on every authenticated request — so sessions cannot be forged.</li><li><code>GET /api/auth/session</code> restores the wallet client-side on reload; <code>DELETE</code> clears it.</li></ul><h3 class="subsection">Multi-network behavior</h3><p>Every on-chain operation is gated behind <code>isOnchainConfigured()</code> and reads the registry through a fresh <code>JsonRpcProvider</code> at <code>PHAROS_RPC_URL</code>, degrading gracefully to fully off-chain mode when unset — the frontend's <code>onchain.configured</code> flag tells consumers which mode is live.</p><h3 class="subsection">Browsing security</h3><ul><li><strong>Business API key</strong> (<code>x-api-key</code> = <code>PHAROS_API_KEY</code>) authorizes server-to-server issuing, transfers and revocations.</li><li><strong>Registry sync</strong>: the dashboard's <code>WalletAuthProvider</code> re-restores the session and the connect button exposes dashboard / disconnect actions, so authenticated users interact only with receipts that match their normalized identity.</li></ul><hr><h2 class="section">9. Developer Guide &amp; Local Setup</h2><h3 class="subsection">Prerequisites</h3><ul><li><strong>Node.js v22+</strong> (repo engine requirement)</li><li><strong>Package manager:</strong> npm</li><li><strong>Postgres</strong> (Supabase, or any Postgres — the app creates tables automatically)</li><li><strong>Web3 wallet</strong> (MetaMask / Coinbase Wallet / Rabby) for the wallet-connected dashboard</li></ul><h3 class="subsection">Installation</h3><div class="codeblock"><span class="codelabel">bash</span><pre class="">git clone https://github.com/Ezekiel544/Folio.git
+cd folio
+npm install
+cp .env.example .env</pre></div><h3 class="subsection">Environment (<code>.env</code> / <code>.env.example</code>)</h3><table><thead><tr><th>Variable</th><th>Required</th><th>Purpose</th></tr></thead><tbody><tr><td><code>PHAROS_API_KEY</code></td><td>yes</td><td>Business API key (<code>x-api-key</code>) for issuing/transferring/revoking</td></tr><tr><td><code>PHAROS_RECEIPT_SECRET</code></td><td>yes</td><td>HMAC key signing every receipt — never rotate after launch</td></tr><tr><td><code>PHAROS_SESSION_SECRET</code></td><td>yes</td><td>Signs the wallet session cookie</td></tr><tr><td><code>DATABASE_URL</code></td><td>yes</td><td>Supabase Postgres <strong>transaction pooler</strong> URL</td></tr><tr><td><code>NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code></td><td>for mobile</td><td>Free WalletConnect Cloud project ID</td></tr><tr><td><code>PHAROS_ALLOW_CLIENT_ISSUE</code></td><td>no</td><td>Demo-only; leave false in production</td></tr><tr><td><code>PHAROS_RPC_URL</code></td><td>on-chain only</td><td>RPC the app anchors through</td></tr><tr><td><code>PHAROS_ISSUER_PRIVATE_KEY</code></td><td>on-chain only</td><td>Hot wallet that writes anchors</td></tr><tr><td><code>PHAROS_RECEIPT_REGISTRY_ADDRESS</code></td><td>on-chain only</td><td>Deployed <code>ReceiptRegistry</code></td></tr><tr><td><code>PHAROS_DB_TABLE</code></td><td>no</td><td>Table name; defaults to <code>receipts</code> (tests use <code>receipts_test</code>)</td></tr></tbody></table><p>&gt; In a Vercel deployment there is <strong>no fallback</strong> for the four required values — the app throws rather than using a public default.</p><h3 class="subsection">Run &amp; verify</h3><div class="codeblock"><span class="codelabel">bash</span><pre class="">npm run dev        # http://localhost:3000
+npm run build      # TypeScript + production build
+npx tsc --noEmit   # type verification</pre></div><h3 class="subsection">Test suite</h3><div class="codeblock"><span class="codelabel">bash</span><pre class="">npm run test:contract   # Hardhat — ReceiptRegistry behaviour (admin, issuer, transfer, revoke)
+npm run test:lib        # node --test — 19 lib cases: signing, canonicalization, transfer/revoke rules,
+                        #   identity casing, session sidecar (isolated receipts_test table)
+npm test                # both</pre></div><h3 class="subsection">Server-side SDK</h3><div class="codeblock"><span class="codelabel">ts</span><pre class="">import { FolioReceipts } from "./src/lib/folio-receipts-sdk";
+
+const folio = new FolioReceipts(process.env.PHAROS_BASE_URL!, process.env.PHAROS_API_KEY!);
+
+const { receipt } = await folio.issue({
+  product: { name: "Creator Pass", sku: "CP-2026" },
+  buyer: { id: "alex@example.com", wallet: "0xAbC…" },
+  seller: { id: "studio", name: "Studio Inc." },
+  purchasedAt: new Date().toISOString(),
+  payment: { amount: 49, currency: "USD", reference: "order_123" },
+  rights: [{ name: "Lifetime access" }],
+  warranty: { provider: "support@studio.com" },
+});
+
+const { valid, reason } = await folio.verify(receipt.id);
+await folio.transfer(receipt.id, "0x0d…", "gift");
+await folio.revoke(receipt.id, "chargeback");</pre></div><h3 class="subsection">Deploying the registry</h3><div class="codeblock"><span class="codelabel">bash</span><pre class=""># Provide PHAROS_ISSUER_PRIVATE_KEY in .env, then:
+npm run deploy            # local Hardhat
+npm run deploy:sepolia    # public Sepolia (fund the issuer wallet first)
+npm run deploy:pharos     # custom network via PHAROS_RPC_URL</pre></div><p>The script prints <code>PHAROS_RECEIPT_REGISTRY_ADDRESS</code> and <code>PHAROS_ISSUER_ADDRESS</code>; wire them into <code>.env</code> / Vercel env vars to enable on-chain anchoring. Leaving them unset runs everything off-chain.</p><hr><h2 class="section">10. Deployment &amp; Security Model</h2><h3 class="subsection">Deployment (Vercel + Supabase)</h3><ul><li><strong>Database:</strong> Supabase project → copy the <strong>Transaction pooler</strong> connection string (port <code>6543</code>) into <code>DATABASE_URL</code>. Tables and indexes are created automatically on first use — no SQL to run.</li><li><strong>App:</strong> import the repo into Vercel (Next.js preset) and set the env vars above. No persistent disk or build steps are required.</li><li><strong>Backups:</strong> <code>pg_dump "$DATABASE_URL" &gt; folio-$(date +%F).sql</code> — store <code>PHAROS_RECEIPT_SECRET</code> alongside, since without the signing key the DB cannot validate its own receipts.</li></ul><h3 class="subsection">Security properties</h3><ul><li><strong>Constant-time comparisons</strong> for signatures and session tokens (<code>timingSafeEqual</code>).</li><li><strong><code>httpOnly</code> + <code>SameSite=Lax</code> + <code>Secure</code> cookies</strong> for nonce and session.</li><li><strong>Same-origin guard</strong> (<code>assertSameOrigin</code>) blocks CSRF on browser-initiated writes; API-key calls (no Origin header) are unaffected.</li><li><strong>Per-IP sliding-window rate limiting</strong> on every route (<code>assertRateLimit</code>).</li><li><strong>Secret hygiene</strong> — no defaults in production, <code>.env</code> is gitignored, and wallet signatures are verified by key recovery rather than trusting client claims.</li><li><strong>Defense in depth for verification</strong> — off-chain signature and on-chain anchor must both pass; a modified stored payload breaks the signature, a rewritten on-chain record breaks the hash match.</li></ul><hr><p><em>Folio turns every purchase into a portable, signed receipt — proof of purchase, ownership, transfers, rights and warranty — verifiable anywhere, with or without a chain lookup.</em></p>
+<footer>Folio — Portable Receipt Layer for Digital Commerce<br>
+Generated from <code>DOCUMENTATION.md</code> · Proof of purchase, ownership, transfers, rights &amp; warranty — verifiable anywhere.</footer>
+</div>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  try {
+    mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: { primaryColor: '#eeedff', primaryTextColor: '#17171f', primaryBorderColor: '#cfc8ff', lineColor: '#1200cc', fontFamily: 'inherit' } });
+    await mermaid.run({ nodes: document.querySelectorAll('pre.mermaid') });
+  } catch (e) { console.warn('[folio] mermaid skipped', e); }
+</script>
+<button class="print-btn" onclick="window.print()">Download PDF ↗</button>
+</body>
+</html>

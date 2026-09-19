@@ -39,19 +39,13 @@ const GlobeIcon = () => (
 
 /* Folio mark */
 const FolioMark = () => (
-  <svg
+  <img
+    src="/folio-logo.png"
+    alt="Folio"
     width="50"
-    height="44"
-    viewBox="0 0 50 44"
-    fill="none"
-    className="inline-block align-middle w-[34px] h-[30px] sm:w-[42px] sm:h-[37px] lg:w-[50px] lg:h-[44px]"
-  >
-    <rect x="2" y="2" width="40" height="40" rx="9" fill="#0A0A0A" />
-    <path
-      d="M22 10h8v6h-4.5v4h4v6h-4v8h-3.5V10z"
-      fill="white"
-    />
-  </svg>
+    height="50"
+    className="inline-block align-middle w-[34px] h-[34px] sm:w-[42px] sm:h-[42px] lg:w-[50px] lg:h-[50px] rounded-lg object-cover"
+  />
 );
 
 export default function Hero() {
@@ -143,7 +137,7 @@ export default function Hero() {
                 color: "#0A0A0A",
               }}
             >
-              {/* <FolioMark />{" "} */}
+              <FolioMark />{" "}
               <span>Your purchases.</span>
               <br />
               <span>Your proof.</span>

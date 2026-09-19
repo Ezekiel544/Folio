@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import WalletConnectButton from "./WalletConnectButton";
+import Logo from "./Logo";
 
 /* ── tiny SVG icons ── */
 const ChevronDown = () => (
@@ -130,16 +131,19 @@ export default function Navbar() {
         }}
         className="fixed top-0 left-0 right-0 z-50"
       >
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 h-[60px] flex items-center justify-between">
+        <div className="max-w-[1400px]  px-0 sm:px-0 h-[60px] flex items-center justify-between ">
 
           {/* Logo */}
           <Link
             href="/"
             onClick={closeMenu}
-            className="flex items-center gap-2 font-bold text-[17px] tracking-tight text-[#0A0A0A]"
+            className="flex items-center "
+            aria-label="Folio"
           >
-            <PharosLogo />
-            FOLIO
+            <Logo size={26} style={{
+            // backdropFilter: "blur(18px)",
+            // border:"2px solid red",
+          }}/>
           </Link>
 
           {/* Desktop nav */}
@@ -397,14 +401,4 @@ function ExploreButton({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-function PharosLogo() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect width="22" height="22" rx="4" fill="#0A0A0A" />
-      <path
-        d="M13 3L6 12h5l-2 7 9-10h-5l2-9z"
-        fill="white"
-      />
-    </svg>
-  );
-}
+
